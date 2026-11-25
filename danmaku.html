@@ -1,0 +1,44 @@
+<style>
+#dmcanvas{position:absolute;inset:0;width:100%;height:100%;z-index:5;pointer-events:none}
+#dm-open{white-space:nowrap}#dm-open.active{border-color:#74b9ad;color:#8fe2c8}
+#dmmodal{z-index:1000}#dmmodal .modalcard{width:min(640px,90vw);max-height:86vh;overflow:auto;box-sizing:border-box}
+#dmmodal h3{margin:0}#dmmodal p{font-size:12px;color:#aab8c9;line-height:1.6;margin:8px 0}
+#dmmodal .dmrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0}
+#dmmodal input[type=text],#dmmodal input[type=password]{min-width:80px;flex:1;width:150px}
+#dmmodal input[type=password]{background:#2a3441;color:#e5edf8;border:1px solid #35404e;border-radius:5px;padding:6px 8px;font:inherit}
+#dmmodal input[type=number]{width:75px}#dmmodal input[type=range]{width:90px}
+#dmmodal label{font-size:12px}#dm-status{padding:10px;background:#161d26;border-radius:6px;overflow-wrap:anywhere;line-height:1.6;font-size:13px}
+#dm-candidates{max-height:210px;overflow:auto;display:flex;flex-direction:column;gap:5px;margin:8px 0}
+#dm-candidates button{text-align:left;padding:9px;white-space:normal;line-height:1.5}
+#dm-candidates button span{display:block;color:#9faec0;font-size:12px}
+#dm-hint{overflow-wrap:anywhere}#dm-settings{border-top:1px solid #35404e;margin-top:14px;padding-top:12px}
+#dm-settings summary{cursor:pointer;font-size:13px}#dm-close{margin-left:auto}#dmmodal .dmnotice{color:#dfc28b}
+#dm-appearance{border:1px solid #405069;border-radius:8px;padding:4px 12px 8px;margin:12px 0}#dm-appearance output{display:inline-block;min-width:32px;font-variant-numeric:tabular-nums}#dm-appearance legend{font-size:13px;color:#c7d9ed;padding:0 6px}
+</style>
+<div id="dmmodal" class="modal hide" role="dialog" aria-modal="true" aria-labelledby="dm-heading">
+<div class="modalcard">
+  <div class="dmrow"><h3 id="dm-heading">弹幕</h3><button id="dm-close" aria-label="关闭弹幕设置">关闭</button></div>
+  <fieldset id="dm-appearance"><legend>弹幕设置</legend>
+  <div class="dmrow"><label>字体大小 <input id="dm-size" type="range" min="5" max="30" step="1" value="24" aria-label="弹幕字体大小"> <output id="dm-size-value" for="dm-size">24</output></label><label>显示范围 <input id="dm-range" type="range" min="0.1" max="1" step="0.01" value="1" aria-label="弹幕显示范围"> <output id="dm-range-value" for="dm-range">100%</output></label></div>
+  <div class="dmrow"><label>不透明度 <input id="dm-opacity" type="range" min="0.2" max="1" step="0.1" value="0.8"></label><label>密度 <select id="dm-density"><option value="4">少</option><option value="8" selected>中</option><option value="12">多</option></select></label><label><input id="dm-scroll" type="checkbox" checked>滚动</label><label><input id="dm-top" type="checkbox" checked>顶部</label><label><input id="dm-bottom" type="checkbox" checked>底部</label></div>
+  <div class="dmrow"><label>时间偏移 <input id="dm-offset" type="number" step="0.1" min="-36000" max="36000" value="0"> 秒</label><span class="tag">正数延后，负数提前</span></div>
+  <p>字号 5–30，显示范围 10%–100%，拖动滑块调整。字号随画面大小等比例缩放。所有弹幕限制在所选范围内；底部弹幕显示在该范围下沿。调整立即生效并自动保存。</p>
+  </fieldset>
+  <div id="dm-status" aria-live="polite">打开视频后可自动识别弹幕</div>
+  <div class="dmrow"><label>查找来源 <select id="dm-provider"><option value="bilibili">B站（无需应用凭证）</option><option value="dandanplay">弹弹play（已有凭证）</option></select></label><button id="dm-find-bili">去B站找番剧</button></div>
+  <p id="dm-bili-guide">首次粘贴B站番剧或视频完整链接，读取后选择对应集数。勾选「记住此文件夹」后，其余视频按集数自动加载。读取的是B站当前可获取的弹幕池，可能不含全部历史弹幕。</p>
+  <div class="dmrow"><button id="dm-match" data-dm-work>重新识别</button><button id="dm-refresh" data-dm-work>更新弹幕</button><button id="dm-local" data-dm-work>导入本地弹幕</button><button id="dm-remove" data-dm-work>解除当前关联</button></div>
+  <div class="dmrow"><input id="dm-query" type="text" placeholder="粘贴B站番剧 / 视频链接，或 ss / ep / BV 编号" aria-label="番剧名称或B站链接"><input id="dm-episode" type="number" min="1" max="9999" placeholder="集数" aria-label="搜索集数"><button id="dm-search" data-dm-work>读取链接</button></div>
+  <label><input id="dm-remember" type="checkbox">选择后记住此文件夹的番剧与集数对应关系</label>
+  <p id="dm-hint"></p><button id="dm-forget" class="hide" data-dm-work>忘记文件夹匹配</button>
+  <div id="dm-candidates"></div>
+  <details id="dm-settings"><summary>高级设置 · 已有弹弹play凭证</summary>
+    <p id="dm-credential-status"></p>
+    <div class="dmrow"><input id="dm-appid" type="text" placeholder="AppId" aria-label="AppId" autocomplete="off"><input id="dm-secret" type="password" placeholder="AppSecret（已保存时可留空）" aria-label="AppSecret" autocomplete="off"></div>
+    <div class="dmrow"><button id="dm-save-settings" data-dm-work>保存凭证</button><button id="dm-clear-settings" data-dm-work>清除凭证</button><button id="dm-docs">打开申请页面</button></div>
+    <p>仅供已有有效凭证使用；B站来源无需配置此项。</p>
+    <p>需要申请应用 AppId / AppSecret。识别仅发送文件名、文件摘要、大小和时长，不上传视频。密钥使用 Windows 加密保存。</p>
+  </details>
+  <label><input id="dm-auto" type="checkbox" checked>打开视频时自动匹配并加载</label>
+  <p>弹幕仅用于预览，跟随原画面、拖拽和片段变速；不会写入导出视频。识别结果及偏移自动保存，已下载的弹幕可离线使用。</p>
+</div></div>

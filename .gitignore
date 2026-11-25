@@ -1,0 +1,15 @@
+node_modules/
+runtime/
+tools/*.exe
+tests/artifacts/
+__pycache__/
+.env*
+*.log
+*.mp4
+*.mkv
+*.webm
+*.mov
+*.avi
+*.inkcut.json
+*.pem
+*.key

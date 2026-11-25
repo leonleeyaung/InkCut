@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>InkCut · 拉片与标注</title><meta http-equiv="Content-Security-Policy" content="default-src 'self' ink: data:; script-src 'self'; style-src 'self' 'unsafe-inline'; media-src ink:; connect-src ink:; img-src 'self' data:">
+<style>
+  :root{--bg:#14171d;--panel:#1c212a;--line:#2a323e;--fg:#dfe6f2;--dim:#8b93a1;--accent:#4ea1ff;--danger:#ff5b6e}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font:13px/1.5 system-ui,"Microsoft YaHei";overflow:hidden;user-select:none}
+  button{font:inherit;color:var(--fg);background:#2b323d;border:1px solid var(--line);border-radius:7px;padding:5px 10px;cursor:pointer}
+  button:hover{background:#37404e}
+  button.on{background:var(--accent);border-color:var(--accent);color:#06121f;font-weight:600}
+  input[type=number],input[type=text],input[type=search]{font:inherit;color:var(--fg);background:#2f3642;border:1px solid var(--line);border-radius:6px;padding:3px 6px}
+  #top{display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .tag{color:var(--dim);font-size:12px}
+  #pname{color:var(--fg);font-size:12.5px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #main{display:flex;height:calc(100vh - 280px);min-height:220px}
+  #vlist{width:236px;flex:none;border-right:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column}
+  #vsearch{padding:6px 8px}
+  #vsearch input{width:100%}
+  #vhead{display:flex;align-items:center;gap:6px;padding:4px 8px;font-size:12px;color:var(--dim)}
+  #videos{flex:1;overflow:auto}
+  .vi{padding:5px 8px;border-bottom:1px solid #232a35;cursor:pointer;font-size:12.5px}
+  .vi:hover{background:#242c38}
+  .vi.on{background:#2b3d52}
+  .vi .n{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .vi .s{font-size:11px;color:var(--dim)}
+  .vi .bar{display:block;height:3px;border-radius:2px;background:#2a323e;margin-top:3px;overflow:hidden}
+  .vi .bar i{display:block;height:100%;background:#4ea1ff}
+  .vi .ops{display:none;gap:6px;margin-top:2px}
+  .vi:hover .ops{display:flex}
+  .vi .ops b{font-weight:400;font-size:11px;color:#8b93a1;padding:0 5px;border-radius:4px;cursor:pointer}
+  .vi .ops b:hover{background:#33404f;color:#e6e9ef}
+  .vi .ops .del:hover{color:var(--danger)}
+  #stage{position:relative;flex:1;background:#000;display:flex;align-items:center;justify-content:center;min-width:0}
+  #wrap{position:relative;height:100%;aspect-ratio:16/9;max-width:100%}
+  #wrap video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+  #draw{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair;z-index:6}
+  #drop{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;color:var(--dim)}
+  #drop b{font-size:16px;color:var(--fg)}
+  #tlbox{border-top:1px solid var(--line);background:var(--panel);height:190px;position:relative}
+  #tl{position:absolute;inset:0;width:100%;height:100%;cursor:pointer}
+  #bar{display:flex;align-items:center;gap:8px;padding:6px 10px;border-top:1px solid var(--line);background:var(--panel)}
+  #seek{flex:1 1 auto;min-width:220px}
+  #hint{position:absolute;left:0;right:0;bottom:0;padding:3px 10px;font-size:11px;color:var(--dim);background:#0f1218aa;pointer-events:none}
+  .toast{position:fixed;left:50%;top:14px;transform:translateX(-50%);background:#2b323d;border:1px solid var(--line);padding:6px 14px;border-radius:8px;font-size:12.5px;z-index:99}
+  #txtbox{position:absolute;z-index:20;display:none}
+  #txtbox textarea{background:#000c;color:#fff;border:1px dashed var(--accent);border-radius:6px;font:16px/1.4 system-ui;padding:4px 6px;resize:none;outline:none}
+  #startup{position:fixed;inset:0;background:radial-gradient(1200px 600px at 50% 0%, #232a36 0%, #14171d 70%);z-index:200;display:flex;align-items:center;justify-content:center;padding:30px}
+  #startup.hide{display:none}
+  .su-card{width:min(820px,92vw);max-height:86vh;display:flex;flex-direction:column;gap:14px}
+  .su-title{font-size:26px;font-weight:700;letter-spacing:.5px}
+  .su-sub{color:var(--dim);font-size:13px;margin-top:-8px}
+  .su-actions{display:flex;gap:10px;flex-wrap:wrap}
+  .su-btn{padding:10px 18px;font-size:14px;border-radius:10px;border:1px solid var(--line);background:#2b323d;color:var(--fg);cursor:pointer}
+  .su-btn:hover{background:#37404e}
+  .su-btn.primary{background:var(--accent);border-color:var(--accent);color:#06121f;font-weight:600}
+  .su-list{overflow:auto;border:1px solid var(--line);border-radius:12px;background:#1c212a;min-height:120px}
+  .su-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid #262d38;cursor:pointer}
+  .su-item:last-child{border-bottom:none}
+  .su-item:hover{background:#26303c}
+  .su-item .nm{font-size:14.5px}
+  .su-item .path{font-size:11.5px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:520px}
+  .su-item .meta{font-size:11.5px;color:var(--dim);text-align:right}
+  .su-item .ren{color:#8b93a1;padding:2px 8px;border-radius:6px}
+  .su-item .ren:hover{background:#33404f;color:#e6e9ef}
+  .su-item .del{color:#7a6168;padding:2px 8px;border-radius:6px}
+  .su-item .del:hover{color:var(--danger);background:#3a2b2f}
+  .su-empty{padding:26px;text-align:center;color:var(--dim);font-size:13px}
+
+
+  body{display:flex;flex-direction:column}
+  #top{flex:none;gap:6px}#pname{max-width:140px}
+  #main{height:auto;flex:1;min-height:160px;overflow:hidden}
+  #wrap{flex:none;max-width:none;aspect-ratio:auto}
+  #tlbox{flex:0 0 230px;height:230px;min-height:130px;overflow:auto;resize:none;background:var(--bg);overscroll-behavior:contain}
+  *{scrollbar-width:auto;scrollbar-color:#fff var(--bg)}
+  ::-webkit-scrollbar{width:12px;height:12px;background:var(--bg)}
+  ::-webkit-scrollbar-track,::-webkit-scrollbar-corner{background:var(--bg)}
+  ::-webkit-scrollbar-thumb{background:#fff;border:3px solid var(--bg);border-radius:8px;min-height:24px}
+  ::-webkit-scrollbar-thumb:hover{background:#fff}
+  #videos{scrollbar-width:auto;scrollbar-color:auto}
+  #videos::-webkit-scrollbar{width:6px;height:6px;background:var(--panel)}
+  #videos::-webkit-scrollbar-track,#videos::-webkit-scrollbar-corner{background:var(--panel)}
+  #videos::-webkit-scrollbar-thumb{background:#657080;border:1px solid var(--panel);border-radius:6px}
+  #videos::-webkit-scrollbar-thumb:hover{background:#95a0af}
+  #vlist{min-width:0;border-right:0}
+  #sidebar-resizer{width:7px;flex:none;cursor:col-resize;background:#1c212a;border-left:1px solid #303946;border-right:1px solid #303946;touch-action:none}
+  #sidebar-edge{position:relative;width:7px;flex:none;z-index:12}
+  #sidebar-edge.collapsed{width:0}
+  #sidebar-edge #sidebar-resizer{height:100%}
+  #toggle-videos{position:absolute;left:0;top:50%;transform:translateY(-50%);width:18px;height:42px;padding:0;border:1px solid #3b4654;border-left:0;border-radius:0 5px 5px 0;background:#222a34;color:#a8b5c6;font-size:22px;line-height:38px;cursor:pointer}
+  #toggle-videos:hover,#toggle-videos:focus-visible{background:#354457;color:#fff}
+  #timeline-resizer{height:8px;flex:none;cursor:row-resize;background:#222a34;border-top:1px solid #36404e;border-bottom:1px solid #36404e;touch-action:none}
+  #sidebar-resizer:hover,#sidebar-resizer:focus-visible,#timeline-resizer:hover,#timeline-resizer:focus-visible{background:#678fb4;outline:none}
+  body.resizing-x,body.resizing-x *{cursor:col-resize!important}body.resizing-y,body.resizing-y *{cursor:row-resize!important}
+  #trackheaders{position:absolute;left:0;top:0;width:214px;pointer-events:none;z-index:11}
+  .trackhead{position:absolute;left:0;width:214px;display:flex;align-items:center;gap:3px;padding:0 7px;pointer-events:auto;border-right:1px solid #455264;border-bottom:1px solid #36404c;font-size:12px}
+  .rulerhead{background:#1b222d;color:#a4b2c5;font-size:11px}
+  .videohead{background:#1a3040;color:#b7dff7}.videohead.current{background:#284c65;box-shadow:inset 3px 0 #6bbcff}
+  .annotationhead{background:#30243c;color:#e0bff9}.annotationhead.current{background:#493454;box-shadow:inset 3px 0 #d1a0ff}
+  .trackhead button{padding:0;min-width:22px;width:22px;height:24px;border-radius:4px;background:#ffffff0a;border:1px solid #ffffff20;color:inherit;line-height:20px;font-size:16px;flex:none}
+  .trackhead button:hover{background:#ffffff24}.trackhead button[data-action=onion]{font-size:11px}.trackhead button[aria-pressed=false]{opacity:.45}
+  .trackname{min-width:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:5px;cursor:default}
+  .trackgroup{border-bottom:1px solid #647185}.trackgroup b{font-size:12px}.trackgroup span{font-size:10px;opacity:.65;flex:1;margin-left:3px}
+  #tl{position:relative;display:block;inset:auto;width:100%;height:200px;touch-action:none}
+  #playhead{position:absolute;top:0;width:2px;background:#f4d178;pointer-events:none;z-index:9}
+  #playhead:before{content:'';position:absolute;left:-4px;top:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:8px solid #f4d178}
+  #bar{flex:none;flex-wrap:wrap;gap:6px}#seek{min-width:120px}#tc{min-width:190px;font-variant-numeric:tabular-nums}
+  #annbar{flex-wrap:wrap}#help{padding:3px 10px;color:#8b93a1;font-size:11px;flex:none;background:#111720}
+  #stage{overflow:clip}#preview-scale{position:absolute;right:8px;bottom:8px;z-index:9;font-variant-numeric:tabular-nums}#wrap.notes-only{background:#000}
+  #wrap.notes-only video,#wrap.notes-only #dmcanvas{visibility:hidden}
+  #preview-notes[aria-pressed=true]{background:#344e68;border-color:#86bdf2;color:#fff}
+  #draw{touch-action:none}#exportresult{cursor:pointer;color:#93d4a1;font-size:11px}
+  button:disabled{opacity:.35;cursor:default}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #6aaeff;outline-offset:2px}
+  select{background:#273240;color:#dfe6f2;border:1px solid #405069;border-radius:5px;padding:3px}
+  .hide{display:none!important}.modal{position:fixed;inset:0;z-index:500;background:#000b;display:flex;align-items:center;justify-content:center}
+  .modalcard{width:420px;padding:28px;background:#202936;border:1px solid #405069;border-radius:14px}
+  progress{width:100%;height:14px;accent-color:#4ea1ff}
+</style>
+</head>
+<body>
+
+<div id="top">
+  <button id="projbtn">工程</button>
+  <span id="pname">未建工程</span>
+  <button id="impfiles">导入视频</button>
+  <button id="impfolder">导入文件夹</button>
+  <span class="tag">工具</span>
+  <button data-tool="select" class="on">选择</button>
+  <button data-tool="pen">画笔</button>
+  <button data-tool="text">文字</button>
+  <button data-tool="line">箭头</button>
+  <button data-tool="rect">方框</button>
+  <button data-tool="eraser">橡皮</button>
+  <input type="color" id="color" value="#ff2d55" style="width:34px;height:26px;padding:0;border:1px solid var(--line);border-radius:6px;background:none">
+  <input type="number" id="size" value="4" min="1" max="30" style="width:54px" title="笔粗">
+  <span class="tag">橡皮</span>
+  <input type="number" id="erasize" value="18" min="4" max="160" style="width:54px">
+  <span style="flex:1"></span>
+  <button id="dm-toggle" aria-pressed="true" title="显示或隐藏弹幕">隐藏弹幕</button><button id="dm-open" aria-label="弹幕设置" title="弹幕设置、匹配与导入">⚙</button><span class="tag" id="savehint"></span>
+  <button id="undo">↶</button>
+  <button id="redo">↷</button>
+  <label class="tag" title="开启后将可见注释轨的内容合成到视频中"><input type="checkbox" id="withnotes">带注释</label><button id="exportclip">导出本段</button>
+  <button id="export" style="background:#2f6d3f;border-color:#3d8a51">导出成片</button>
+</div>
+
+<div id="main">
+  <div id="vlist">
+    <div id="vsearch"><input id="vq" type="search" placeholder="搜视频名…"></div>
+    <div id="vhead"><span id="vcount">视频</span><span style="flex:1"></span><span id="vclear" style="cursor:pointer">清空</span></div>
+    <div id="videos"></div>
+  </div>
+  <div id="sidebar-edge"><div id="sidebar-resizer" role="separator" aria-label="拖动调整视频列表宽度" aria-orientation="vertical" tabindex="0"></div><button id="toggle-videos" aria-controls="vlist" aria-expanded="true" aria-label="收起视频列表" title="收起视频列表">‹</button></div>
+  <div id="stage">
+    <div id="wrap">
+      <video id="vA" playsinline></video>
+      <video id="vB" playsinline></video>
+      <canvas id="dmcanvas" aria-hidden="true"></canvas><canvas id="draw"></canvas>
+      <div id="txtbox"><textarea rows="1"></textarea></div>
+    </div>
+    <button type="button" id="preview-scale" title="恢复适应窗口" aria-label="恢复适应窗口" hidden></button><div id="drop"><b>拖视频或文件夹进来</b><span>也可以点上面的「导入视频 / 导入文件夹」</span></div>
+  </div>
+</div>
+
+<div id="timeline-resizer" role="separator" aria-label="拖动调整轨道栏高度" aria-orientation="horizontal" tabindex="0"></div><div id="tlbox"><canvas id="tl"></canvas><div id="playhead"></div><div id="trackheaders"></div></div>
+
+<div id="bar">
+  <button id="play">播放</button><button id="preview-notes" aria-controls="wrap" aria-pressed="false" title="隐藏预览画面和弹幕，只看注释">只看注释</button>
+  <span class="tag" id="tc">帧 0 / 0</span>
+  <input type="range" id="seek" min="0" max="0" value="0">
+  <span class="tag">跳到</span><input id="jump" type="number" min="0" value="0" style="width:76px"><span class="tag">帧率</span><span id="fps">--</span>
+  <button id="zoomout">－</button>
+  <button id="zoomin">＋</button>
+  <button id="fit">适配</button>
+  <button id="cut" title="切分所选片段或播放头处的上层片段（C / Ctrl+K）">切分 C</button>
+  <button id="delsel">删除</button>
+  
+  
+  <span class="tag" id="clipsum"></span>
+  <label class="tag"><input type="checkbox" id="scrubaudio">拖拽声音</label>
+  <label class="tag"><input type="checkbox" id="mute">静音</label><input id="volume" type="range" min="0" max="1" step="0.01" value="1" style="width:60px" title="音量">
+  <label class="tag" for="rate">片段速度</label><select id="rate" title="选中视频片段后设置；预览与导出均生效" disabled><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option><option value="2">2×</option><option value="3">3×</option><option value="4">4×</option></select><button id="resetvideo" title="恢复完整原视频和 1 倍速，保留注释，可撤销">重置视频</button>
+  <span id="exportresult"></span><span id="annbar" style="display:none;align-items:center;gap:6px">
+    <span class="tag">起</span><input type="number" id="annin" style="width:70px">
+    <span class="tag">止</span><input type="number" id="annout" style="width:70px">
+    <button id="edittext">改文字</button><button id="anndel" style="color:#ff5b6e">删这条</button>
+  </span>
+</div>
+
+<div id="startup">
+  <div class="su-card">
+    <div class="su-title">InkCut</div>
+    <div class="su-sub">选一个工程继续，或者新建一个</div>
+    <div class="su-actions">
+      <button class="su-btn" id="su-back" style="display:none">返回剪辑</button><button class="su-btn primary" id="su-new">＋ 新建工程</button>
+      <button class="su-btn" id="su-openfile">打开工程文件…</button>
+    </div>
+    <input id="su-search" type="text" placeholder="搜工程名或路径…"
+      style="width:100%;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:#242b35;color:var(--fg);font-size:13.5px">
+    <div class="su-list" id="su-list"></div>
+  </div>
+</div>
+
+<div id="help">空格 播放/暂停 · 双击画面播放/暂停 · ← → 逐帧（长按加速） · 选择工具拖框多选 · C / Ctrl+K 切分 · Ctrl+D 复制 · Delete 删除 · Ctrl+Z 撤销 · 滚轮缩放 · 右侧滚动条上下移动轨道 · Shift/中键拖动平移</div>
+<div id="exportmodal" class="modal hide"><div class="modalcard"><h3>导出视频</h3><p id="exportstatus">准备导出</p><progress id="exportprogress" max="100" value="0"></progress><p>导出期间请稍候，原视频会保留。</p><button id="cancelexport">取消导出</button></div></div>
+<div id="loadingmodal" class="modal hide"><div class="modalcard"><h3>准备视频</h3><p id="loadingstatus">正在准备兼容预览…</p><p>仅在无法直接播放时处理。结果会缓存，原视频保持不变。</p><button id="cancelload">取消</button></div></div>
+<style>
+#dmcanvas{position:absolute;inset:0;width:100%;height:100%;z-index:5;pointer-events:none}
+#dm-open{white-space:nowrap}#dm-open.active{border-color:#74b9ad;color:#8fe2c8}
+#dmmodal{z-index:1000}#dmmodal .modalcard{width:min(640px,90vw);max-height:86vh;overflow:auto;box-sizing:border-box}
+#dmmodal h3{margin:0}#dmmodal p{font-size:12px;color:#aab8c9;line-height:1.6;margin:8px 0}
+#dmmodal .dmrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0}
+#dmmodal input[type=text],#dmmodal input[type=password]{min-width:80px;flex:1;width:150px}
+#dmmodal input[type=password]{background:#2a3441;color:#e5edf8;border:1px solid #35404e;border-radius:5px;padding:6px 8px;font:inherit}
+#dmmodal input[type=number]{width:75px}#dmmodal input[type=range]{width:90px}
+#dmmodal label{font-size:12px}#dm-status{padding:10px;background:#161d26;border-radius:6px;overflow-wrap:anywhere;line-height:1.6;font-size:13px}
+#dm-candidates{max-height:210px;overflow:auto;display:flex;flex-direction:column;gap:5px;margin:8px 0}
+#dm-candidates button{text-align:left;padding:9px;white-space:normal;line-height:1.5}
+#dm-candidates button span{display:block;color:#9faec0;font-size:12px}
+#dm-hint{overflow-wrap:anywhere}#dm-settings{border-top:1px solid #35404e;margin-top:14px;padding-top:12px}
+#dm-settings summary{cursor:pointer;font-size:13px}#dm-close{margin-left:auto}#dmmodal .dmnotice{color:#dfc28b}
+#dm-appearance{border:1px solid #405069;border-radius:8px;padding:4px 12px 8px;margin:12px 0}#dm-appearance output{display:inline-block;min-width:32px;font-variant-numeric:tabular-nums}#dm-appearance legend{font-size:13px;color:#c7d9ed;padding:0 6px}
+</style>
+<div id="dmmodal" class="modal hide" role="dialog" aria-modal="true" aria-labelledby="dm-heading">
+<div class="modalcard">
+  <div class="dmrow"><h3 id="dm-heading">弹幕</h3><button id="dm-close" aria-label="关闭弹幕设置">关闭</button></div>
+  <fieldset id="dm-appearance"><legend>弹幕设置</legend>
+  <div class="dmrow"><label>字体大小 <input id="dm-size" type="range" min="5" max="30" step="1" value="24" aria-label="弹幕字体大小"> <output id="dm-size-value" for="dm-size">24</output></label><label>显示范围 <input id="dm-range" type="range" min="0.1" max="1" step="0.01" value="1" aria-label="弹幕显示范围"> <output id="dm-range-value" for="dm-range">100%</output></label></div>
+  <div class="dmrow"><label>不透明度 <input id="dm-opacity" type="range" min="0.2" max="1" step="0.1" value="0.8"></label><label>密度 <select id="dm-density"><option value="4">少</option><option value="8" selected>中</option><option value="12">多</option></select></label><label><input id="dm-scroll" type="checkbox" checked>滚动</label><label><input id="dm-top" type="checkbox" checked>顶部</label><label><input id="dm-bottom" type="checkbox" checked>底部</label></div>
+  <div class="dmrow"><label>时间偏移 <input id="dm-offset" type="number" step="0.1" min="-36000" max="36000" value="0"> 秒</label><span class="tag">正数延后，负数提前</span></div>
+  <p>字号 5–30，显示范围 10%–100%，拖动滑块调整。字号随画面大小等比例缩放。所有弹幕限制在所选范围内；底部弹幕显示在该范围下沿。调整立即生效并自动保存。</p>
+  </fieldset>
+  <div id="dm-status" aria-live="polite">打开视频后可自动识别弹幕</div>
+  <div class="dmrow"><label>查找来源 <select id="dm-provider"><option value="bilibili">B站（无需应用凭证）</option><option value="dandanplay">弹弹play（已有凭证）</option></select></label><button id="dm-find-bili">去B站找番剧</button></div>
+  <p id="dm-bili-guide">首次粘贴B站番剧或视频完整链接，读取后选择对应集数。勾选「记住此文件夹」后，其余视频按集数自动加载。读取的是B站当前可获取的弹幕池，可能不含全部历史弹幕。</p>
+  <div class="dmrow"><button id="dm-match" data-dm-work>重新识别</button><button id="dm-refresh" data-dm-work>更新弹幕</button><button id="dm-local" data-dm-work>导入本地弹幕</button><button id="dm-remove" data-dm-work>解除当前关联</button></div>
+  <div class="dmrow"><input id="dm-query" type="text" placeholder="粘贴B站番剧 / 视频链接，或 ss / ep / BV 编号" aria-label="番剧名称或B站链接"><input id="dm-episode" type="number" min="1" max="9999" placeholder="集数" aria-label="搜索集数"><button id="dm-search" data-dm-work>读取链接</button></div>
+  <label><input id="dm-remember" type="checkbox">选择后记住此文件夹的番剧与集数对应关系</label>
+  <p id="dm-hint"></p><button id="dm-forget" class="hide" data-dm-work>忘记文件夹匹配</button>
+  <div id="dm-candidates"></div>
+  <details id="dm-settings"><summary>高级设置 · 已有弹弹play凭证</summary>
+    <p id="dm-credential-status"></p>
+    <div class="dmrow"><input id="dm-appid" type="text" placeholder="AppId" aria-label="AppId" autocomplete="off"><input id="dm-secret" type="password" placeholder="AppSecret（已保存时可留空）" aria-label="AppSecret" autocomplete="off"></div>
+    <div class="dmrow"><button id="dm-save-settings" data-dm-work>保存凭证</button><button id="dm-clear-settings" data-dm-work>清除凭证</button><button id="dm-docs">打开申请页面</button></div>
+    <p>仅供已有有效凭证使用；B站来源无需配置此项。</p>
+    <p>需要申请应用 AppId / AppSecret。识别仅发送文件名、文件摘要、大小和时长，不上传视频。密钥使用 Windows 加密保存。</p>
+  </details>
+  <label><input id="dm-auto" type="checkbox" checked>打开视频时自动匹配并加载</label>
+  <p>弹幕仅用于预览，跟随原画面、拖拽和片段变速；不会写入导出视频。识别结果及偏移自动保存，已下载的弹幕可离线使用。</p>
+</div></div>
+<script src="app.js"></script></body></html>

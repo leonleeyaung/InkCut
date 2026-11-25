@@ -1,0 +1,7 @@
+{
+  "name": "inkcut", "version": "0.6.0", "private": true,
+  "description": "Windows 桌面拉片、逐帧注释与非破坏性剪辑工具", "main": "desktop.cjs", "license": "MIT",
+  "engines": {"node": ">=22.12.0"},
+  "scripts": {"start": "node start.cjs", "doctor": "node start.cjs --check", "test": "node tests/danmaku-service.cjs"},
+  "devDependencies": {"electron": "45.3.2"}
+}
