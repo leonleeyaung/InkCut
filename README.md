@@ -2,7 +2,15 @@
 
 InkCut 是 Windows 桌面拉片工具。一次专注一条源视频：逐帧看片、画构图线、给动作写注释，再用多轨时间轴裁剪和调整片段速度。剪辑和注释都不会改写原视频。
 
-## Windows x64 安装与启动
+[**下载 Windows x64 便携版（ZIP）**](https://github.com/leonleeyaung/InkCut/releases/download/v0.6.0/InkCut-0.6.0-Windows-x64.zip) · [版本说明与 SHA-256 校验文件](https://github.com/leonleeyaung/InkCut/releases/tag/v0.6.0)
+
+![InkCut 实际界面：左侧素材列表，右侧逐帧画面与手绘动作线，下方为视频轨和注释轨。](docs/images/inkcut-preview.png)
+
+## 下载即用（Windows x64）
+
+下载上面的便携版 ZIP，**完整解压**到一个可写目录，再双击 **`启动InkCut.cmd`**。包内自带 Electron 和 FFmpeg，不用另装 Node.js、Python 或 FFmpeg，首次启动也不需要下载组件。请勿直接在压缩包内运行。GitHub 自动生成的 `Source code (zip)` 是源码包，不是便携版。
+
+## 从源码启动（可选）
 
 1. 在 GitHub 仓库点 **Code → Download ZIP**，把 ZIP **完整解压**到一个有写入权限的目录。也可以用 Git 克隆本仓库。
 2. 普通用户不需要 Node.js 或 Python。先安装 [FFmpeg](https://ffmpeg.org/download.html) 的 Windows 版本。如果你下载的是压缩包，取其中的 `bin\ffmpeg.exe`，放到 InkCut 目录下的 `tools\ffmpeg.exe`（没有 `tools` 就新建）。已经把 FFmpeg 加入系统 `PATH` 的可以跳过复制。
